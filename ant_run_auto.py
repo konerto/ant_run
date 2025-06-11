@@ -16,12 +16,11 @@ logger = logging.getLogger(__name__)
 
 TOKEN = ""  # Replace with your actual token
 PHONE = ""  # Replace with your actual phone number
+SIGNATURE = ""  # Base signature from the original URI
 
 TARGET_SCORE = random.randint(160, 200)  # Target score to reach in the game
 CURRENT_SCORE = 0  # Track current score
 
-# Base signature from the original URI
-BASE_SIGNATURE = ""
 
 def generate_signature():
     """Generate signature following the game's JavaScript logic"""
@@ -29,19 +28,20 @@ def generate_signature():
     # Since we already have the base signature, we simulate the same process
     try:
         # URL decode the signature (in case it was URL encoded)
-        sign_encode_url = urllib.parse.unquote(BASE_SIGNATURE)
+        sign_encode_url = urllib.parse.unquote(SIGNATURE)
         # Base64 encode it (like btoa in JavaScript)
         sign_base64 = base64.b64encode(sign_encode_url.encode()).decode()
         return sign_base64
     except Exception as e:
         logger.warning(f"Error generating signature: {e}, using base signature")
-        return BASE_SIGNATURE
+        return SIGNATURE
+
 
 def build_websocket_url():
     """Build WebSocket URL with generated signature"""
     signature = generate_signature()
     ua = "android"  # Following the game's logic for non-iOS
-    
+
     url = (
         f"wss://api-game.cellphones.com.vn/ws/ant_run"
         f"?game_code=ant_run"
@@ -51,6 +51,7 @@ def build_websocket_url():
         f"&ua={ua}"
     )
     return url
+
 
 # Generate WebSocket URL dynamically
 WS_URL = build_websocket_url()
@@ -336,25 +337,56 @@ async def connect_websocket():
         logger.error(f"Unexpected error: {e}")
 
 
+# Load configuration from JSON file
+def load_config():
+    try:
+        with open("config.json", "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        logger.error("Configuration file 'config.json' not found.")
+        return []
+
+
+# Main function to run the WebSocket client for each account
 async def main():
-    """Main function to run the WebSocket client"""
+    """Main function to run the WebSocket client for each account"""
     print("🐜 Starting Ant Run WebSocket Client...")
     print(f"🎯 Target Score: {TARGET_SCORE}")
     print("📊 The game will automatically stop when the target score is reached")
     print("Press Ctrl+C to stop manually\n")
 
-    try:
-        checkin_success = await checkin_tasks()
-        if not checkin_success:
-            logger.warning("⚠️ Task checkin failed, but continuing with the game...")
+    configs = load_config()
+    if not configs:
+        logger.error("No configurations found. Exiting.")
+        return
 
-        await connect_websocket()
-    except KeyboardInterrupt:
-        print(
-            f"\n⏹️  WebSocket client stopped by user. Final Score: {CURRENT_SCORE}/{TARGET_SCORE}"
-        )
-    except Exception as e:
-        logger.error(f"Error in main: {e}")
+    for config in configs:
+        global TOKEN, PHONE, SIGNATURE
+        # Only use global variables if they are defined
+        if TOKEN and PHONE and SIGNATURE:
+            logger.info(f"Using global configuration for account {PHONE}.")
+        else:
+            TOKEN = config.get("token", TOKEN)
+            PHONE = config.get("phone", PHONE)
+            SIGNATURE = config.get("signature", SIGNATURE)
+
+        if not TOKEN or not PHONE or not SIGNATURE:
+            logger.warning(f"Missing configuration for account {PHONE}. Skipping.")
+            continue
+
+        try:
+            checkin_success = await checkin_tasks()
+            if not checkin_success:
+                logger.warning("⚠️ Task checkin failed, but continuing with the game...")
+
+            await connect_websocket()
+        except KeyboardInterrupt:
+            print(
+                f"\n⏹️  WebSocket client stopped by user. Final Score: {CURRENT_SCORE}/{TARGET_SCORE}"
+            )
+            break
+        except Exception as e:
+            logger.error(f"Error in main: {e}")
 
 
 if __name__ == "__main__":

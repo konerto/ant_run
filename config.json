@@ -1,0 +1,12 @@
+[
+    {
+        "token": "your_token_here",
+        "phone": "your_phone_here",
+        "signature": "your_signature_here"
+    },
+    {
+        "token": "another_token_here",
+        "phone": "another_phone_here",
+        "signature": "another_signature_here"
+    }
+] 
