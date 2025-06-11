@@ -51,7 +51,7 @@ BASE_SIGNATURE = "signature" # Thay bằng signature từ URI gốc
 ### 3. Chạy Bot
 
 ```bash
-python websocket_client.py
+python ant_run_auto.py
 ```
 
 ## 🎮 How It Works
@@ -76,7 +76,7 @@ The client uses exact calculations reverse-engineered from the game's JavaScript
 
 ```
 d:\ant_run\
-├── websocket_client.py      # Main WebSocket client script
+├── ant_run_auto.py      # Main WebSocket client script
 ├── game_simulation.py       # Simulation and testing framework
 ├── test_target_score.py     # Target score functionality tests
 ├── requirements.txt         # Python dependencies
