@@ -1,12 +1,12 @@
 [
     {
-        "token": "your_token_here",
-        "phone": "your_phone_here",
-        "signature": "your_signature_here"
+        "password": "password1",
+        "phone": "phone1",
+        "signature": "signature1"
     },
     {
-        "token": "another_token_here",
-        "phone": "another_phone_here",
-        "signature": "another_signature_here"
+        "password": "password2",
+        "phone": "phone2",
+        "signature": "signature2"
     }
 ] 

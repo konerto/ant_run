@@ -14,7 +14,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-TOKEN = ""  # Replace with your actual token
+# Global variables
+PASSWORD = ""
 PHONE = ""  # Replace with your actual phone number
 SIGNATURE = ""  # Base signature from the original URI
 
@@ -53,8 +54,8 @@ def build_websocket_url():
     return url
 
 
-# Generate WebSocket URL dynamically
-WS_URL = build_websocket_url()
+TOKEN = ""
+WS_URL = ""
 CHECKIN_API_URL = (
     "https://api.cellphones.com.vn/minigame-flip-card/tasks?game_code=ant_run"
 )
@@ -347,46 +348,103 @@ def load_config():
         return []
 
 
+async def run_websocket_client():
+    """Run the WebSocket client with the current configuration."""
+    try:
+        checkin_success = await checkin_tasks()
+        if not checkin_success:
+            logger.error("❌ Task checkin failed. Exiting.")
+            return
+
+        await connect_websocket()
+    except KeyboardInterrupt:
+        print(
+            f"\n⏹️  WebSocket client stopped by user. Final Score: {CURRENT_SCORE}/{TARGET_SCORE}"
+        )
+    except Exception as e:
+        logger.error(f"Error in run_websocket_client: {e}")
+
+
+async def login(phone, password):
+    """Perform login to get the token."""
+    url = "https://api.smember.com.vn/sso/v1/auth/login"
+    headers = {
+        "accept": "*/*",
+        "accept-language": "en-US,en;q=0.9",
+        "cache-control": "no-cache",
+        "content-type": "application/json",
+        "origin": "https://smember.com.vn",
+        "pragma": "no-cache",
+        "priority": "u=1, i",
+        "referer": "https://smember.com.vn/",
+        "sec-ch-ua": '"Microsoft Edge";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 Edg/137.0.0.0",
+        "x-client-type": "web",
+    }
+    data = {"phone": phone, "password": password}
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, headers=headers, json=data)
+            if response.status_code == 200:
+                return response.json().get("data", {}).get("token")
+            else:
+                logger.error(
+                    f"Login failed with status {response.status_code}: {response.text}"
+                )
+                return None
+    except Exception as e:
+        logger.error(f"Error during login: {e}")
+        return None
+
+
 # Main function to run the WebSocket client for each account
 async def main():
     """Main function to run the WebSocket client for each account"""
+    global PHONE, PASSWORD, SIGNATURE, TOKEN, WS_URL
     print("🐜 Starting Ant Run WebSocket Client...")
     print(f"🎯 Target Score: {TARGET_SCORE}")
     print("📊 The game will automatically stop when the target score is reached")
     print("Press Ctrl+C to stop manually\n")
 
-    configs = load_config()
-    if not configs:
-        logger.error("No configurations found. Exiting.")
-        return
-
-    for config in configs:
-        global TOKEN, PHONE, SIGNATURE
-        # Only use global variables if they are defined
-        if TOKEN and PHONE and SIGNATURE:
-            logger.info(f"Using global configuration for account {PHONE}.")
-        else:
-            TOKEN = config.get("token", TOKEN)
-            PHONE = config.get("phone", PHONE)
-            SIGNATURE = config.get("signature", SIGNATURE)
-
-        if not TOKEN or not PHONE or not SIGNATURE:
-            logger.warning(f"Missing configuration for account {PHONE}. Skipping.")
-            continue
-
-        try:
-            checkin_success = await checkin_tasks()
-            if not checkin_success:
-                logger.warning("⚠️ Task checkin failed, but continuing with the game...")
-
-            await connect_websocket()
-        except KeyboardInterrupt:
-            print(
-                f"\n⏹️  WebSocket client stopped by user. Final Score: {CURRENT_SCORE}/{TARGET_SCORE}"
+    if PHONE and PASSWORD and SIGNATURE:
+        TOKEN = await login(PHONE, PASSWORD)
+        if not TOKEN:
+            logger.error(f"Failed to get token for account {PHONE}. Exiting.")
+            return
+        # Rebuild WebSocket URL for global configuration
+        WS_URL = build_websocket_url()
+        await run_websocket_client()
+    else:
+        configs = load_config()
+        if not configs:
+            logger.error(
+                "No configurations found and global configuration is incomplete. Exiting."
             )
-            break
-        except Exception as e:
-            logger.error(f"Error in main: {e}")
+            return
+
+        for config in configs:
+            PHONE = config.get("phone", "")
+            SIGNATURE = config.get("signature", "")
+            PASSWORD = config.get("password", "")
+
+            if not PHONE or not SIGNATURE or not PASSWORD:
+                logger.warning(f"Missing configuration for account {PHONE}. Skipping.")
+                continue
+
+            # Perform login to get the token
+            TOKEN = await login(PHONE, PASSWORD)
+            if not TOKEN:
+                logger.error(f"Failed to get token for account {PHONE}. Skipping.")
+                continue
+
+            # Rebuild WebSocket URL for each configuration
+            WS_URL = build_websocket_url()
+            await run_websocket_client()
 
 
 if __name__ == "__main__":
