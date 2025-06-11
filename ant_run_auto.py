@@ -2,6 +2,7 @@ import asyncio
 import base64
 import json
 import logging
+import random
 import urllib.parse
 
 import httpx
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 TOKEN = ""  # Replace with your actual token
 PHONE = ""  # Replace with your actual phone number
 
-TARGET_SCORE = 200  # Target score to reach in the game
+TARGET_SCORE = random.randint(160, 200)  # Target score to reach in the game
 CURRENT_SCORE = 0  # Track current score
 
 # Base signature from the original URI
