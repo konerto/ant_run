@@ -1,54 +1,54 @@
-# 🐜 Ant Run WebSocket Client
+# 🐜 Ant Run Auto - Hướng Dẫn Sử Dụng
 
-An automated Python WebSocket client for the Ant Run game that connects to the game server, automatically collects coins, and manages game state with customizable target scoring.
+Bot tự động chơi game Ant Run của CellphoneS, kết nối WebSocket và thu thập điểm số một cách tự động.
 
-## 🎯 Features
+## 🎯 Tính Năng
 
-- **Automated Gameplay**: Connects to the Ant Run game server and plays automatically
-- **Smart Coin Collection**: Analyzes game segments and collects all available coins/cookies
-- **Target Score System**: Automatically stops when a configurable target score is reached
-- **Accurate Game Physics**: Uses exact calculations reverse-engineered from the game's JavaScript code
-- **Real-time Logging**: Comprehensive logging of game actions, score progress, and server responses
-- **Comprehensive Testing**: Offline simulation framework with real server data validation
-- **Error Handling**: Robust WebSocket connection management and error recovery
-- **Score Progress Tracking**: Real-time score updates in Current/Target format
+- **Chơi Tự Động**: Kết nối server game và chơi tự động
+- **Thu Thập Xu**: Tự động phân tích và thu thập tất cả xu/cookie trong game
+- **Dừng Theo Mục Tiêu**: Tự động dừng khi đạt điểm số mong muốn
+- **Tính Toán Chính Xác**: Sử dụng công thức từ mã nguồn JavaScript gốc của game
+- **Theo Dõi Real-time**: Log chi tiết các hành động và tiến trình điểm số
+- **Xử Lý Lỗi**: Quản lý kết nối WebSocket ổn định
+- **Hiển Thị Tiến Trình**: Cập nhật điểm số theo format Hiện Tại/Mục Tiêu
 
-## 📋 Requirements
+## 📋 Yêu Cầu
 
-- Python 3.7+
-- `websockets` library
-- Valid authentication token and phone number for the game server
+- Python 3.7 trở lên
+- Thư viện `websockets` và `httpx`
+- Token xác thực và số điện thoại hợp lệ
 
-## 🚀 Quick Start
+## 🚀 Hướng Dẫn Nhanh
 
-### 1. Installation
+### 1. Cài Đặt
 
 ```bash
-# Clone or download the project
+# Tải project về
 cd d:\ant_run
 
-# Create virtual environment (recommended)
+# Tạo môi trường ảo (khuyến nghị)
 python -m venv venv
 
-# Activate virtual environment
-# On Windows:
+# Kích hoạt môi trường ảo
+# Trên Windows:
 venv\Scripts\activate
 
-# Install dependencies
+# Cài đặt thư viện cần thiết
 pip install -r requirements.txt
 ```
 
-### 2. Configuration
+### 2. Cấu Hình
 
-Edit `websocket_client.py` and update these variables:
+Mở file `ant_run_auto.py` và cập nhật các thông tin sau:
 
 ```python
-TOKEN = "your_actual_token_here"  # Replace with your game token
-PHONE = "your_phone_number"       # Replace with your phone number
-TARGET_SCORE = 200                # Set your desired target score
+TOKEN = "token_của_bạn"     # Thay bằng token thật
+PHONE = "số_điện_thoại"     # Thay bằng số điện thoại của bạn
+TARGET_SCORE = 200          # Đặt điểm số mục tiêu
+BASE_SIGNATURE = "signature" # Thay bằng signature từ URI gốc
 ```
 
-### 3. Run the Client
+### 3. Chạy Bot
 
 ```bash
 python websocket_client.py
