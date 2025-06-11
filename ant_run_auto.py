@@ -1,6 +1,8 @@
 import asyncio
+import base64
 import json
 import logging
+import urllib.parse
 
 import httpx
 import websockets
@@ -11,14 +13,46 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-TOKEN = "your_token_here"  # Replace with your actual token
-PHONE = "0123456789"  # Replace with your actual phone number
+TOKEN = ""  # Replace with your actual token
+PHONE = ""  # Replace with your actual phone number
 
 TARGET_SCORE = 200  # Target score to reach in the game
 CURRENT_SCORE = 0  # Track current score
 
-# WebSocket URL with parameters
-WS_URL = f"wss://api-game.cellphones.com.vn/ws/ant_run?game_code=ant_run&token={TOKEN}&signature=dVp0QXhSaVJONWo2TzM4U1BGMnVRZnNoYWNFdjFXV1JBdXR4eE5CQWdKcz0=&phone={PHONE}&ua=android"
+# Base signature from the original URI
+BASE_SIGNATURE = ""
+
+def generate_signature():
+    """Generate signature following the game's JavaScript logic"""
+    # The JavaScript does: decodeURIComponent(signatureParam) then btoa(signEncodeUrl)
+    # Since we already have the base signature, we simulate the same process
+    try:
+        # URL decode the signature (in case it was URL encoded)
+        sign_encode_url = urllib.parse.unquote(BASE_SIGNATURE)
+        # Base64 encode it (like btoa in JavaScript)
+        sign_base64 = base64.b64encode(sign_encode_url.encode()).decode()
+        return sign_base64
+    except Exception as e:
+        logger.warning(f"Error generating signature: {e}, using base signature")
+        return BASE_SIGNATURE
+
+def build_websocket_url():
+    """Build WebSocket URL with generated signature"""
+    signature = generate_signature()
+    ua = "android"  # Following the game's logic for non-iOS
+    
+    url = (
+        f"wss://api-game.cellphones.com.vn/ws/ant_run"
+        f"?game_code=ant_run"
+        f"&token={TOKEN}"
+        f"&signature={urllib.parse.quote(signature)}"
+        f"&phone={PHONE}"
+        f"&ua={ua}"
+    )
+    return url
+
+# Generate WebSocket URL dynamically
+WS_URL = build_websocket_url()
 CHECKIN_API_URL = (
     "https://api.cellphones.com.vn/minigame-flip-card/tasks?game_code=ant_run"
 )
