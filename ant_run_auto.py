@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 
+import httpx
 import websockets
 
 # Set up logging for debugging
@@ -18,10 +19,49 @@ CURRENT_SCORE = 0  # Track current score
 
 # WebSocket URL with parameters
 WS_URL = f"wss://api-game.cellphones.com.vn/ws/ant_run?game_code=ant_run&token={TOKEN}&signature=dVp0QXhSaVJONWo2TzM4U1BGMnVRZnNoYWNFdjFXV1JBdXR4eE5CQWdKcz0=&phone={PHONE}&ua=android"
+CHECKIN_API_URL = (
+    "https://api.cellphones.com.vn/minigame-flip-card/tasks?game_code=ant_run"
+)
 
 # Messages
 SEGMENT_REQUEST = {"segment_gen": True}
 TOTAL_DISTANCE = 0.0  # Track total distance traveled like the game does
+
+
+async def checkin_tasks():
+    """Checkin tasks before starting the game"""
+    try:
+        headers = {
+            "Authorization": f"Bearer {TOKEN}",
+            "Content-Type": "application/json",
+            "User-Agent": "android",
+        }
+
+        logger.info("🔄 Checking in tasks before starting game...")
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(CHECKIN_API_URL, headers=headers)
+
+            if response.status_code == 200:
+                logger.info("✅ Task checkin successful!")
+                try:
+                    task_data = response.json()
+                    logger.info(f"📋 Task data: {json.dumps(task_data, indent=2)}")
+                except json.JSONDecodeError:
+                    logger.info(f"📋 Task response: {response.text}")
+                return True
+            else:
+                logger.warning(
+                    f"⚠️ Task checkin failed with status {response.status_code}: {response.text}"
+                )
+                return False
+
+    except httpx.RequestError as e:
+        logger.error(f"❌ HTTP request error during task checkin: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"❌ Unexpected error during task checkin: {e}")
+        return False
 
 
 def create_collect_action(lane, z_pos, pz_pos, y_pos, segment_id):
@@ -269,6 +309,10 @@ async def main():
     print("Press Ctrl+C to stop manually\n")
 
     try:
+        checkin_success = await checkin_tasks()
+        if not checkin_success:
+            logger.warning("⚠️ Task checkin failed, but continuing with the game...")
+
         await connect_websocket()
     except KeyboardInterrupt:
         print(
